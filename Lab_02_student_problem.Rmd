@@ -84,13 +84,101 @@ filtered = mutated_1 %>%
   filter(!is.na(test_score_monday))
 # NAs don't work in raw form, have to use a function called is.na
 
-```
+no_na = mutated_1 %>% 
+  drop_na()
 
+#remove any object from environment
+rm(no_na)
+
+```
 
 (6) Use `group_by` and `summarize` to obtain the mean, standard deviation, and median of `test_score_monday` by `test_time`. You can print this table directly to console.
 
+```{r summarizing}
+
+#Missing values!
+mutated_1 %>% 
+  group_by(test_time_fixed) %>% 
+  summarize(mean_monday = mean(test_score_monday),
+            medidan_monday = median(test_score_monday),
+            sd_monday = sd(test_score_monday))
+
+#use filtered df since there are no NAs
+filtered %>% 
+  group_by(test_time_fixed) %>% 
+  summarize(mean_monday = mean(test_score_monday),
+            medidan_monday = median(test_score_monday),
+            sd_monday = sd(test_score_monday))
+
+# na.rm = TRUE option helps you remove NAs inside
+mutated_1 %>% 
+  group_by(test_time_fixed) %>% 
+  summarize(mean_monday = mean(test_score_monday, na.rm = TRUE),
+            medidan_monday = median(test_score_monday, na.rm = TRUE),
+            sd_monday = sd(test_score_monday, na.rm = TRUE))
+
+```
+
 (7) Create a plot with side-by-side box plots for morning and evening test scores.
+
+```{r boxplots}
+
+ggplot(data = filtered) +
+  geom_boxplot(aes(x = test_time_fixed, y = test_score_monday)) +
+  labs(x = "Test time", y = "Test Score on Monday", title = "Distribution of test scores on Monday", subtitle = "By test time")
+
+```
 
 (8) Combine all of your steps from (2) - (6) into a single block of code using pipes `%>%`.
 
+```{r piping}
+
+summary_df <- test_scores_raw %>% 
+  rename(test_score_monday = ttm,
+         test_score_tuesday = ttt,
+         test_score_wednesday = ttw) %>%
+    select(id, test_score_monday, test_time) %>% 
+    mutate(test_time_fixed = if_else(test_time == "early", "morning", "evening")) %>% 
+    filter(!is.na(test_score_monday)) %>% 
+    group_by(test_time_fixed) %>% 
+    summarize(mean_monday = mean(test_score_monday, na.rm = TRUE),
+            medidan_monday = median(test_score_monday, na.rm = TRUE),
+            sd_monday = sd(test_score_monday, na.rm = TRUE))
+
+summary_df
+
+# Clean dataset
+clean_data = test_scores_raw %>% 
+  rename(test_score_monday = ttm,
+         test_score_tuesday = ttt,
+         test_score_wednesday = ttw) %>%
+    select(id, test_score_monday, test_time) %>% 
+    mutate(test_time_fixed = if_else(test_time == "early", "morning", "evening")) %>% 
+    filter(!is.na(test_score_monday))
+
+# Summary step next:
+summary_df_2 = clean_data %>% 
+  group_by(test_time_fixed) %>% 
+  summarize(mean_monday = mean(test_score_monday),
+            medidan_monday = median(test_score_monday),
+            sd_monday = sd(test_score_monday))
+
+```
+
 (9) Use a t-test (equal variances) to test whether mean Monday test scores significantly differ between morning and evening test-taking times, at a level of significance of 5%. Report your conclusion with the test-statistic, degrees of freedom, and p-value in a sentence using in-line R code.
+
+```{r ttest}
+
+#equal variance assumption (not unequal)
+monday_t_res = t.test(test_score_monday ~ test_time_fixed, data = clean_data,
+                       var.equal = TRUE)
+
+monday_t_res
+
+tstat = round(monday_t_res$statistic, 2)
+df = round(monday_t_res$parameter, 1)
+p = round(monday_t_res$p.value, 3)
+
+```
+
+There is not enough evidence to reject the null hypothesis; the data do not support the alternative hypothesis that there is a significant difference in mean test scores between those who took the test in the morning and those who took the test in the evening on Monday (t = `r tstat`; df = `r df`; p = `r p`), at a level of significance of 5%.
