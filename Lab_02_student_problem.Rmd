@@ -1,0 +1,96 @@
+---
+title: "Lab 02 Student Problem"
+author: "P8101S22 Teaching Team"
+date: ""
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(readxl)
+```
+
+## Student Problem
+
+The test score dataset contains student test scores over several days, with some students taking their tests in the morning and some students taking their tests in the evening.
+
+(1) Load the test score data (`test_scores.csv`) into R.
+
+```{r loading}
+test_scores_raw <- read_csv("data/test_scores.csv")
+
+#read as NA example
+test_scores_na <- read_csv("data/test_scores.csv", na = c("early", "late"))
+```
+
+(2) The dataset variable names are not very informative. Change the `ttm` variable name to `test_score_monday`, `ttt` to `test_score_tuesday`, and `ttw` to `test_score_wednesday`.
+
+```{r renaming}
+
+renamed_1 <- test_scores_raw %>% 
+  rename(test_score_monday = ttm) %>% 
+  rename(test_score_tuesday = ttt) %>% 
+  rename(test_score_wednesday = ttw)
+
+#instead of renaming each time, could do it all at once
+
+renamed_2 <- test_scores_raw %>% 
+  rename(test_score_monday = ttm,
+         test_score_tuesday = ttt,
+         test_score_wednesday = ttw)
+
+```
+
+(3) Create a dataset that only includes `id`, `test_score_monday`, and `test_time` variables.
+
+```{r select}
+
+selected_1 = renamed_1 %>% 
+  select(id, test_score_monday, test_time)
+
+# another way
+
+seleted_2 = select(renamed_1, id, test_score_monday, test_time)
+
+selected_3 = renamed_1 %>%
+  select("id", "test_score_monday", "test_time")
+
+```
+
+
+(4) The person who entered the test time data put values of "early" and "late", but it would be more appropriate if the values were "morning" and "evening" -- make this change to the test time variable.
+
+```{r mutating}
+
+# Better to make a new variable
+mutated_1 = selected_1 %>% 
+  mutate(test_time_fixed = if_else(test_time == "early", "morning", "evening"))
+
+#not as an ideal route
+mutated_2 = selected_1 %>% 
+  mutate(test_time = if_else(test_time == "early", "morning", "evening"))
+
+```
+
+(5) Filter out observations with missing values for `test_score_monday`.
+
+```{r filtering}
+
+filtered = mutated_1 %>% 
+  filter(!is.na(test_score_monday))
+# NAs don't work in raw form, have to use a function called is.na
+
+```
+
+
+(6) Use `group_by` and `summarize` to obtain the mean, standard deviation, and median of `test_score_monday` by `test_time`. You can print this table directly to console.
+
+(7) Create a plot with side-by-side box plots for morning and evening test scores.
+
+(8) Combine all of your steps from (2) - (6) into a single block of code using pipes `%>%`.
+
+(9) Use a t-test (equal variances) to test whether mean Monday test scores significantly differ between morning and evening test-taking times, at a level of significance of 5%. Report your conclusion with the test-statistic, degrees of freedom, and p-value in a sentence using in-line R code.
